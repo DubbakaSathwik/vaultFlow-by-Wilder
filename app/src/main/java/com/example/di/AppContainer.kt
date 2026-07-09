@@ -39,7 +39,9 @@ class AppContainerImpl(private val context: Context) : AppContainer {
             database.ocrDao(),
             database.merchantDao(),
             database.savingsGoalDao(),
-            database.privateVaultDao()
+            database.privateVaultDao(),
+            database.borrowLendDao(),
+            database.reminderDao()
         )
     }
 }

@@ -12,6 +12,8 @@ import com.example.data.database.OcrDao
 import com.example.data.database.MerchantDao
 import com.example.data.database.SavingsGoalDao
 import com.example.data.database.PrivateVaultDao
+import com.example.data.database.BorrowLendDao
+import com.example.data.database.ReminderDao
 import com.example.domain.model.VaultItem
 import com.example.domain.model.Transaction
 import com.example.domain.model.BankAccount
@@ -31,6 +33,8 @@ import com.example.domain.model.OcrHistory
 import com.example.domain.model.SavingsGoal
 import com.example.domain.model.PrivateVaultState
 import com.example.domain.model.VaultHistoryItem
+import com.example.domain.model.BorrowLendItem
+import com.example.domain.model.Reminder
 import com.example.domain.repository.VaultRepository
 import kotlinx.coroutines.flow.Flow
 
@@ -46,7 +50,9 @@ class VaultRepositoryImpl(
     private val ocrDao: OcrDao,
     private val merchantDao: MerchantDao,
     private val savingsGoalDao: SavingsGoalDao,
-    private val privateVaultDao: PrivateVaultDao
+    private val privateVaultDao: PrivateVaultDao,
+    private val borrowLendDao: BorrowLendDao,
+    private val reminderDao: ReminderDao
 ) : VaultRepository {
 
     // Legacy Items
@@ -156,5 +162,19 @@ class VaultRepositoryImpl(
     override suspend fun insertOrUpdateVaultState(state: PrivateVaultState) = privateVaultDao.insertOrUpdateState(state)
     override fun getAllVaultHistory(): Flow<List<VaultHistoryItem>> = privateVaultDao.getAllHistory()
     override suspend fun insertVaultHistoryItem(item: VaultHistoryItem): Long = privateVaultDao.insertHistoryItem(item)
+
+    // Borrow & Lend
+    override fun getAllBorrowLendItems(): Flow<List<BorrowLendItem>> = borrowLendDao.getAllBorrowLendItems()
+    override suspend fun getBorrowLendItemById(id: Int): BorrowLendItem? = borrowLendDao.getBorrowLendItemById(id)
+    override suspend fun insertBorrowLendItem(item: BorrowLendItem): Long = borrowLendDao.insertBorrowLendItem(item)
+    override suspend fun updateBorrowLendItem(item: BorrowLendItem) = borrowLendDao.updateBorrowLendItem(item)
+    override suspend fun deleteBorrowLendItem(item: BorrowLendItem) = borrowLendDao.deleteBorrowLendItem(item)
+
+    // Reminders
+    override fun getAllReminders(): Flow<List<Reminder>> = reminderDao.getAllReminders()
+    override suspend fun getReminderById(id: Int): Reminder? = reminderDao.getReminderById(id)
+    override suspend fun insertReminder(reminder: Reminder): Long = reminderDao.insertReminder(reminder)
+    override suspend fun updateReminder(reminder: Reminder) = reminderDao.updateReminder(reminder)
+    override suspend fun deleteReminder(reminder: Reminder) = reminderDao.deleteReminder(reminder)
 }
 

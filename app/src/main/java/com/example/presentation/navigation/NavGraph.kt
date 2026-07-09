@@ -22,6 +22,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.navigation.toRoute
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -42,6 +49,8 @@ import com.example.presentation.viewmodel.OcrViewModel
 import com.example.presentation.viewmodel.RecurringPaymentsViewModel
 import com.example.presentation.viewmodel.SearchViewModel
 import com.example.presentation.viewmodel.IntelligenceViewModel
+import com.example.presentation.viewmodel.AnalyticsViewModel
+import com.example.presentation.viewmodel.ReportsViewModel
 import androidx.navigation.toRoute
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,8 +73,8 @@ fun NavGraph(
         }
     }
 
-    // Show BottomBar and FAB only on standard primary dashboard tabs
-    val showBottomBarAndFab = currentDestination?.let { dest ->
+    // Show BottomBar only on standard primary dashboard tabs
+    val showBottomBar = currentDestination?.let { dest ->
         dest.hasRoute<HomeDestination>() ||
         dest.hasRoute<TransactionDestination>() ||
         dest.hasRoute<BorrowDestination>() ||
@@ -76,20 +85,39 @@ fun NavGraph(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            if (showBottomBarAndFab) {
+            if (showBottomBar) {
                 NavigationBar(
                     modifier = Modifier.testTag("app_bottom_bar")
                 ) {
                     val tabs = listOf(
-                        Triple(HomeDestination, Icons.Default.Home, "Home"),
-                        Triple(TransactionDestination, Icons.Default.Receipt, "Transactions"),
+                        Triple(TransactionDestination(), Icons.Default.Receipt, "Transactions"),
                         Triple(BorrowDestination, Icons.Default.Payments, "Borrow"),
+                        Triple(HomeDestination, Icons.Default.Home, "Home"),
                         Triple(AnalyticsDestination, Icons.Default.BarChart, "Analytics"),
                         Triple(ProfileDestination, Icons.Default.Person, "Profile")
                     )
 
                     tabs.forEach { (destination, icon, label) ->
                         val isSelected = currentDestination?.hasRoute(destination::class) ?: false
+
+                        // Animated scale and y-offset for bouncy pop-up effect
+                        val scale by animateFloatAsState(
+                            targetValue = if (isSelected) 1.25f else 1.0f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessMedium
+                            ),
+                            label = "NavIconScale"
+                        )
+                        val translationY by animateFloatAsState(
+                            targetValue = if (isSelected) (-4f) else 0f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessMedium
+                            ),
+                            label = "NavIconTranslation"
+                        )
+
                         NavigationBarItem(
                             selected = isSelected,
                             onClick = {
@@ -101,22 +129,29 @@ fun NavGraph(
                                     restoreState = true
                                 }
                             },
-                            icon = { Icon(imageVector = icon, contentDescription = label) },
-                            label = { Text(text = label) },
+                            icon = {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = label,
+                                    modifier = Modifier.graphicsLayer {
+                                        scaleX = scale
+                                        scaleY = scale
+                                        this.translationY = translationY
+                                    }
+                                )
+                            },
+                            label = {
+                                Text(
+                                    text = label,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    fontSize = 11.sp,
+                                    overflow = TextOverflow.Visible
+                                )
+                            },
                             modifier = Modifier.testTag("nav_tab_${label.lowercase()}")
                         )
                     }
-                }
-            }
-        },
-        floatingActionButton = {
-            if (showBottomBarAndFab) {
-                FloatingActionButton(
-                    onClick = { /* Non-functional placeholder */ },
-                    shape = CircleShape,
-                    modifier = Modifier.testTag("app_fab")
-                ) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = "Add Item")
                 }
             }
         }
@@ -181,11 +216,35 @@ fun NavGraph(
                     onMerchantsClick = { navController.navigate(MerchantDatabaseDestination) },
                     onSavingsGoalsClick = { navController.navigate(SavingsGoalsDestination) },
                     onVaultClick = { navController.navigate(VaultDestination) },
+                    onNotificationsClick = { navController.navigate(NotificationsDestination) },
+                    onCalendarClick = { navController.navigate(CalendarDestination) },
+                    onReportsClick = { navController.navigate(ReportsDestination) },
+                    onAiAssistantClick = { navController.navigate(AiAssistantDestination) },
+                    onAddExpenseClick = { navController.navigate(TransactionDestination(startInAddMode = true)) },
+                    onBorrowLendClick = { navController.navigate(BorrowDestination) },
                     modifier = Modifier.fillMaxSize()
                 )
             }
 
-            composable<TransactionDestination> {
+            composable<AiAssistantDestination> {
+                val context = LocalContext.current.applicationContext as VaultFlowApplication
+                val appContainer = context.container
+                val intelligenceViewModel: IntelligenceViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            return IntelligenceViewModel(appContainer.vaultRepository) as T
+                        }
+                    }
+                )
+                AiAssistantScreen(
+                    viewModel = intelligenceViewModel,
+                    onBackClick = { navController.navigateUp() }
+                )
+            }
+
+            composable<TransactionDestination> { backStackEntry ->
+                val destination = backStackEntry.toRoute<TransactionDestination>()
                 val context = LocalContext.current.applicationContext as VaultFlowApplication
                 val appContainer = context.container
                 val transactionViewModel: TransactionViewModel = viewModel(
@@ -196,7 +255,10 @@ fun NavGraph(
                         }
                     }
                 )
-                TransactionScreen(viewModel = transactionViewModel)
+                TransactionScreen(
+                    viewModel = transactionViewModel,
+                    startInAddMode = destination.startInAddMode
+                )
             }
 
             composable<BorrowDestination> {
@@ -204,7 +266,17 @@ fun NavGraph(
             }
 
             composable<AnalyticsDestination> {
-                AnalyticsScreen()
+                val context = LocalContext.current.applicationContext as VaultFlowApplication
+                val appContainer = context.container
+                val analyticsViewModel: AnalyticsViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            return AnalyticsViewModel(appContainer.vaultRepository) as T
+                        }
+                    }
+                )
+                AnalyticsScreen(viewModel = analyticsViewModel)
             }
 
             composable<ProfileDestination> {
@@ -256,7 +328,20 @@ fun NavGraph(
             }
 
             composable<ReportsDestination> {
-                ReportsScreen()
+                val context = LocalContext.current.applicationContext as VaultFlowApplication
+                val appContainer = context.container
+                val reportsViewModel: ReportsViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            return ReportsViewModel(appContainer.vaultRepository) as T
+                        }
+                    }
+                )
+                ReportsScreen(
+                    viewModel = reportsViewModel,
+                    onBackClick = { navController.navigateUp() }
+                )
             }
 
             composable<RecurringPaymentsDestination> {
@@ -275,6 +360,10 @@ fun NavGraph(
 
             composable<NotificationsDestination> {
                 NotificationsScreen()
+            }
+
+            composable<CalendarDestination> {
+                CalendarScreen(onBackClick = { navController.navigateUp() })
             }
 
             composable<SearchDestination> {

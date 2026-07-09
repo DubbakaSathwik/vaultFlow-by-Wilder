@@ -12,7 +12,7 @@ object OnboardingDestination
 object HomeDestination
 
 @Serializable
-object TransactionDestination
+data class TransactionDestination(val startInAddMode: Boolean = false)
 
 @Serializable
 object BorrowDestination
@@ -58,4 +58,10 @@ object MerchantDatabaseDestination
 
 @Serializable
 data class MerchantDetailsDestination(val merchantId: Int)
+
+@Serializable
+object CalendarDestination
+
+@Serializable
+object AiAssistantDestination
 

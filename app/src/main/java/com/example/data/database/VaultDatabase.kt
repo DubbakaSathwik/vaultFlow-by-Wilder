@@ -26,6 +26,8 @@ import com.example.domain.model.OcrHistory
 import com.example.domain.model.SavingsGoal
 import com.example.domain.model.PrivateVaultState
 import com.example.domain.model.VaultHistoryItem
+import com.example.domain.model.BorrowLendItem
+import com.example.domain.model.Reminder
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -63,9 +65,11 @@ interface VaultDao {
         AiMemory::class,
         SavingsGoal::class,
         PrivateVaultState::class,
-        VaultHistoryItem::class
+        VaultHistoryItem::class,
+        BorrowLendItem::class,
+        Reminder::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class VaultDatabase : RoomDatabase() {
@@ -81,5 +85,7 @@ abstract class VaultDatabase : RoomDatabase() {
     abstract fun merchantDao(): MerchantDao
     abstract fun savingsGoalDao(): SavingsGoalDao
     abstract fun privateVaultDao(): PrivateVaultDao
+    abstract fun borrowLendDao(): BorrowLendDao
+    abstract fun reminderDao(): ReminderDao
 }
 

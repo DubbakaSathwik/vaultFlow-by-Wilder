@@ -74,12 +74,11 @@ fun ProfileScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
-            LargeTopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
                     Text(
                         text = "VaultFlow Space",
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = (-0.5).sp
+                        fontWeight = FontWeight.Bold
                     )
                 },
                 actions = {
@@ -104,7 +103,7 @@ fun ProfileScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.largeTopAppBarColors(
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
             )

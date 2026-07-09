@@ -30,6 +30,13 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.presentation.screens.dashboard.*
 import com.example.presentation.viewmodel.HomeViewModel
+import com.example.presentation.viewmodel.BorrowLendViewModel
+import com.example.presentation.viewmodel.ReminderViewModel
+import com.example.presentation.viewmodel.CalendarViewModel
+import com.example.presentation.viewmodel.SavingsGoalViewModel
+import androidx.lifecycle.ViewModelProvider
+import com.example.VaultFlowApplication
+import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,6 +48,12 @@ fun HomeScreen(
     onMerchantsClick: () -> Unit = {},
     onSavingsGoalsClick: () -> Unit = {},
     onVaultClick: () -> Unit = {},
+    onNotificationsClick: () -> Unit = {},
+    onCalendarClick: () -> Unit = {},
+    onReportsClick: () -> Unit = {},
+    onAiAssistantClick: () -> Unit = {},
+    onAddExpenseClick: () -> Unit = {},
+    onBorrowLendClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = viewModel()
 ) {
@@ -48,6 +61,47 @@ fun HomeScreen(
     val isFabExpanded by viewModel.isFabExpanded.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val isBottomSheetVisible by viewModel.isBottomSheetVisible.collectAsState()
+
+    // Real DB-driven ViewModels setup
+    val context = LocalContext.current.applicationContext as VaultFlowApplication
+    val appContainer = context.container
+    val borrowLendViewModel: BorrowLendViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                return BorrowLendViewModel(appContainer.vaultRepository) as T
+            }
+        }
+    )
+    val reminderViewModel: ReminderViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                return ReminderViewModel(appContainer.vaultRepository) as T
+            }
+        }
+    )
+    val calendarViewModel: CalendarViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                return CalendarViewModel(appContainer.vaultRepository) as T
+            }
+        }
+    )
+    val savingsGoalViewModel: SavingsGoalViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                return SavingsGoalViewModel(appContainer.vaultRepository) as T
+            }
+        }
+    )
+
+    val dbBorrowLendItems by borrowLendViewModel.allItems.collectAsState()
+    val dbTodayReminders by reminderViewModel.todayReminders.collectAsState()
+    val dbGoals by savingsGoalViewModel.allGoals.collectAsState()
+    val dbTransactions by calendarViewModel.transactions.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -104,6 +158,30 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        IconButton(
+                            onClick = onCalendarClick,
+                            modifier = Modifier.testTag("calendar_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CalendarToday,
+                                contentDescription = "Calendar",
+                                tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        IconButton(
+                            onClick = onNotificationsClick,
+                            modifier = Modifier.testTag("notifications_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = "Alerts & Reminders",
+                                tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
                         IconButton(
                             onClick = onSettingsClick,
                             modifier = Modifier.testTag("settings_button")
@@ -200,11 +278,14 @@ fun HomeScreen(
                 QuickActionsSection(
                     onActionClicked = { action ->
                         when (action) {
+                            "add_expense" -> onAddExpenseClick()
+                            "borrow_lend" -> onBorrowLendClick()
                             "import_ss" -> onOcrImportClick()
                             "categories" -> onCategoriesClick()
                             "merchants" -> onMerchantsClick()
                             "vault" -> onVaultClick()
                             "add_goal" -> onSavingsGoalsClick()
+                            "reports" -> onReportsClick()
                             else -> viewModel.triggerQuickAction(action)
                         }
                     }
@@ -249,6 +330,357 @@ fun HomeScreen(
                 )
             }
 
+            // Today's Reminders Section (Real DB integrated)
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("todays_reminders_card"),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), shape = CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.NotificationsActive,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "Today's Reminders",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            TextButton(onClick = onNotificationsClick) {
+                                Text("Alert Hub", fontSize = 12.sp)
+                                Icon(Icons.Default.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        if (dbTodayReminders.isEmpty()) {
+                            Text(
+                                text = "No reminders scheduled for today. All clean!",
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        } else {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                dbTodayReminders.take(2).forEach { r ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(
+                                                MaterialTheme.colorScheme.surface,
+                                                shape = RoundedCornerShape(12.dp)
+                                            )
+                                            .padding(12.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column {
+                                            Text(r.title, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                            Text(r.type, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                                        }
+                                        Text(r.reminderTime, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Upcoming Borrow Section (Real DB integrated)
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("upcoming_borrow_card"),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f), shape = CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Payments,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.secondary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "Upcoming Loans & Debts",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            TextButton(onClick = { viewModel.triggerQuickAction("borrow") }) {
+                                Text("Lend Ledger", fontSize = 12.sp)
+                                Icon(Icons.Default.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        val activeDebts = dbBorrowLendItems.filter { it.status != "Completed" && it.status != "Cancelled" }
+                        if (activeDebts.isEmpty()) {
+                            Text(
+                                text = "No active borrowing or lending records. You're totally debt-free!",
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        } else {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                activeDebts.take(2).forEach { item ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(
+                                                MaterialTheme.colorScheme.surface,
+                                                shape = RoundedCornerShape(12.dp)
+                                            )
+                                            .padding(12.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column {
+                                            Text(item.personName, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                            Text(
+                                                text = if (item.type == "Borrowed") "Money I Borrowed" else "Money Others Owe Me",
+                                                fontSize = 11.sp,
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                            )
+                                        }
+                                        Column(horizontalAlignment = Alignment.End) {
+                                            Text("₹${item.amount - item.paidAmount}", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = if (item.type == "Borrowed") Color.Red else Color.Green)
+                                            Text("Due ${SimpleDateFormat("dd MMM", Locale.getDefault()).format(Date(item.dueDate))}", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Upcoming Goals Section (Real DB integrated)
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("upcoming_goals_card"),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f), shape = CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Savings,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.tertiary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "Active Savings Goals",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            TextButton(onClick = onSavingsGoalsClick) {
+                                Text("All Goals", fontSize = 12.sp)
+                                Icon(Icons.Default.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        val activeGoals = dbGoals.filter { it.currentSavedAmount < it.targetAmount }
+                        if (activeGoals.isEmpty()) {
+                            Text(
+                                text = "No active savings goals found. Set one up to start saving!",
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        } else {
+                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                activeGoals.take(2).forEach { goal ->
+                                    val progress = if (goal.targetAmount > 0) (goal.currentSavedAmount / goal.targetAmount).toFloat() else 0f
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(
+                                                MaterialTheme.colorScheme.surface,
+                                                shape = RoundedCornerShape(12.dp)
+                                            )
+                                            .padding(12.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(goal.name, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                            Text("₹${goal.currentSavedAmount} / ₹${goal.targetAmount}", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        LinearProgressIndicator(
+                                            progress = progress,
+                                            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                                            color = MaterialTheme.colorScheme.primary,
+                                            trackColor = MaterialTheme.colorScheme.surfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Calendar Preview Section (Real DB integrated)
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("calendar_preview_card"),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.1f), shape = CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CalendarToday,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.outline,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "Weekly Financial Strip",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            TextButton(onClick = onCalendarClick) {
+                                Text("Full Calendar", fontSize = 12.sp)
+                                Icon(Icons.Default.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        // Render current week horizontal days
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            val todayCal = Calendar.getInstance()
+                            val weekStart = todayCal.clone() as Calendar
+                            weekStart.set(Calendar.DAY_OF_WEEK, todayCal.firstDayOfWeek)
+
+                            for (i in 0..6) {
+                                val dayCal = weekStart.clone() as Calendar
+                                dayCal.add(Calendar.DAY_OF_MONTH, i)
+                                val dayNum = dayCal.get(Calendar.DAY_OF_MONTH)
+                                val isToday = dayNum == todayCal.get(Calendar.DAY_OF_MONTH) && dayCal.get(Calendar.MONTH) == todayCal.get(Calendar.MONTH)
+
+                                val dayTxs = dbTransactions.filter {
+                                    val cal = Calendar.getInstance().apply { timeInMillis = it.timestamp }
+                                    cal.get(Calendar.YEAR) == dayCal.get(Calendar.YEAR) &&
+                                    cal.get(Calendar.MONTH) == dayCal.get(Calendar.MONTH) &&
+                                    cal.get(Calendar.DAY_OF_MONTH) == dayNum
+                                }
+                                val hasActivity = dayTxs.isNotEmpty()
+
+                                Box(
+                                    modifier = Modifier
+                                        .size(width = 38.dp, height = 48.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(
+                                            if (isToday) MaterialTheme.colorScheme.primaryContainer
+                                            else Color.Transparent
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            text = SimpleDateFormat("EE", Locale.getDefault()).format(dayCal.time).take(1),
+                                            fontSize = 10.sp,
+                                            color = if (isToday) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                        )
+                                        Text(
+                                            text = dayNum.toString(),
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            color = if (isToday) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                        )
+                                        if (hasActivity) {
+                                            Box(modifier = Modifier.size(4.dp).background(Color.Green, CircleShape))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             // 10. BORROW & LEND SUMMARY (Section 8)
             item {
                 BorrowLendSummarySection(
@@ -277,7 +709,8 @@ fun HomeScreen(
                 AiAssistantSection(
                     tips = state.aiTips,
                     currentIndex = state.currentAiTipIndex,
-                    onNextTip = { viewModel.addDummyItem("next_tip") }
+                    onNextTip = { viewModel.addDummyItem("next_tip") },
+                    modifier = Modifier.clickable { onAiAssistantClick() }
                 )
             }
 
@@ -291,7 +724,10 @@ fun HomeScreen(
 
             // 15. FINANCIAL HEALTH SCORE (Section 13)
             item {
-                FinancialHealthScoreSection(state = state)
+                FinancialHealthScoreSection(
+                    state = state,
+                    modifier = Modifier.clickable { onAiAssistantClick() }
+                )
             }
 
             // 16. ACHIEVEMENTS (Section 14)

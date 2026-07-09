@@ -52,14 +52,15 @@ import java.util.*
 @Composable
 fun TransactionScreen(
     modifier: Modifier = Modifier,
-    viewModel: TransactionViewModel
+    viewModel: TransactionViewModel,
+    startInAddMode: Boolean = false
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Screen State: "LIST", "ADD_EDIT", "TRASH", "DETAILS"
-    var currentScreenState by remember { mutableStateOf("LIST") }
+    var currentScreenState by remember { mutableStateOf(if (startInAddMode) "ADD_EDIT" else "LIST") }
     var selectedTransactionForEdit by remember { mutableStateOf<Transaction?>(null) }
     var selectedTransactionForDetails by remember { mutableStateOf<Transaction?>(null) }
 
@@ -109,7 +110,10 @@ fun TransactionScreen(
                             )
                         }
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         },
         floatingActionButton = {

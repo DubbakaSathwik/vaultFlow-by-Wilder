@@ -19,6 +19,8 @@ import com.example.domain.model.OcrHistory
 import com.example.domain.model.SavingsGoal
 import com.example.domain.model.PrivateVaultState
 import com.example.domain.model.VaultHistoryItem
+import com.example.domain.model.BorrowLendItem
+import com.example.domain.model.Reminder
 import kotlinx.coroutines.flow.Flow
 
 interface VaultRepository {
@@ -129,5 +131,19 @@ interface VaultRepository {
     suspend fun insertOrUpdateVaultState(state: PrivateVaultState)
     fun getAllVaultHistory(): Flow<List<VaultHistoryItem>>
     suspend fun insertVaultHistoryItem(item: VaultHistoryItem): Long
+
+    // Borrow & Lend
+    fun getAllBorrowLendItems(): Flow<List<BorrowLendItem>>
+    suspend fun getBorrowLendItemById(id: Int): BorrowLendItem?
+    suspend fun insertBorrowLendItem(item: BorrowLendItem): Long
+    suspend fun updateBorrowLendItem(item: BorrowLendItem)
+    suspend fun deleteBorrowLendItem(item: BorrowLendItem)
+
+    // Reminders
+    fun getAllReminders(): Flow<List<Reminder>>
+    suspend fun getReminderById(id: Int): Reminder?
+    suspend fun insertReminder(reminder: Reminder): Long
+    suspend fun updateReminder(reminder: Reminder)
+    suspend fun deleteReminder(reminder: Reminder)
 }
 

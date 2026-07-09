@@ -12,8 +12,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Handshake
+import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Stars
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -53,7 +53,7 @@ fun QuickActionsSection(
         QuickActionItem("Merchants", Icons.Default.Storefront, "merchants", Color(0xFF10B981)),
         QuickActionItem("Borrow/Lend", Icons.Default.Handshake, "borrow_lend", MaterialTheme.colorScheme.tertiary),
         QuickActionItem("Add Goal", Icons.Default.Stars, "add_goal", MaterialTheme.colorScheme.error),
-        QuickActionItem("Export PDF", Icons.Default.PictureAsPdf, "export_pdf", Color(0xFFF59E0B))
+        QuickActionItem("Reports", Icons.Default.Assessment, "reports", Color(0xFFF59E0B))
     )
 
     Row(
