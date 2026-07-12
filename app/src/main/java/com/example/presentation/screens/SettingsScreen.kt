@@ -410,19 +410,66 @@ fun SettingsScreen(
                         }
 
                         if (pinEnabled) {
-                            var customPin by remember { mutableStateOf(pinCode) }
-                            OutlinedTextField(
-                                value = customPin,
-                                onValueChange = {
-                                    if (it.length <= 4 && it.all { c -> c.isDigit() }) {
-                                        customPin = it
-                                        viewModel.setPinCode(it)
+                            var newPin by remember { mutableStateOf("") }
+                            var confirmPin by remember { mutableStateOf("") }
+
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = newPin,
+                                    onValueChange = {
+                                        if (it.length <= 4 && it.all { c -> c.isDigit() }) {
+                                            newPin = it
+                                            if (it.length == 4 && it == confirmPin) {
+                                                viewModel.setPinCode(it)
+                                            }
+                                        }
+                                    },
+                                    label = { Text("Set 4-Digit Secure PIN") },
+                                    placeholder = { Text("Enter 4 digits (e.g., 1234)") },
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth().testTag("new_pin_input")
+                                )
+
+                                OutlinedTextField(
+                                    value = confirmPin,
+                                    onValueChange = {
+                                        if (it.length <= 4 && it.all { c -> c.isDigit() }) {
+                                            confirmPin = it
+                                            if (it.length == 4 && it == newPin) {
+                                                viewModel.setPinCode(it)
+                                            }
+                                        }
+                                    },
+                                    label = { Text("Confirm Secure PIN") },
+                                    placeholder = { Text("Re-enter your 4-digit PIN to confirm") },
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth().testTag("confirm_pin_input")
+                                )
+
+                                val isMatch = newPin.length == 4 && confirmPin.length == 4 && newPin == confirmPin
+                                val isTyping = newPin.isNotEmpty() || confirmPin.isNotEmpty()
+
+                                if (isTyping) {
+                                    if (isMatch) {
+                                        Text(
+                                            text = "✓ PINs match. Security updated!",
+                                            color = MaterialTheme.colorScheme.primary,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    } else {
+                                        Text(
+                                            text = "✗ PINs do not match or are not 4 digits yet.",
+                                            color = MaterialTheme.colorScheme.error,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = FontWeight.Bold
+                                        )
                                     }
-                                },
-                                label = { Text("Set 4-Digit Secure PIN") },
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                                }
+                            }
                         }
 
                         Row(

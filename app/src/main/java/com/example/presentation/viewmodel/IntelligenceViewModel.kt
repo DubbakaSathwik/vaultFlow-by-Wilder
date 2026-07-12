@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.domain.model.*
 import com.example.domain.repository.VaultRepository
+import com.example.data.ocr.GeminiService
+import com.example.data.ocr.ChatMessage
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
@@ -909,6 +911,109 @@ class IntelligenceViewModel(private val repository: VaultRepository) : ViewModel
         achievements = listOf("Budget General", "Thrifty Saver", "Punctual Payer"),
         healthScore = IntelligenceHealthScore()
     ))
+
+    // --- Conversational Financial AI Assistant ---
+    val chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
+    val isChatLoading = MutableStateFlow(false)
+
+    fun compileLedgerContext(): String {
+        val sb = StringBuilder()
+        
+        // 1. Bank Accounts & Balances
+        val accounts = allAccounts.value
+        sb.append("ACCOUNTS & BALANCES:\n")
+        if (accounts.isEmpty()) {
+            sb.append("- No accounts set up.\n")
+        } else {
+            accounts.forEach { acct ->
+                sb.append("- ${acct.bankName} (${acct.nickname}): Balance ₹${acct.balance} (Last 4: ${acct.last4Digits})\n")
+            }
+        }
+        sb.append("\n")
+        
+        // 2. Savings Goals
+        val goals = allGoals.value
+        sb.append("ACTIVE SAVINGS GOALS:\n")
+        if (goals.isEmpty()) {
+            sb.append("- No active savings goals.\n")
+        } else {
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            goals.forEach { g ->
+                val dateStr = dateFormat.format(Date(g.targetDate))
+                sb.append("- Goal: ${g.name}, Target: ₹${g.targetAmount}, Current Saved: ₹${g.currentSavedAmount}, Target Date: $dateStr, Status: ${g.status}\n")
+            }
+        }
+        sb.append("\n")
+
+        // 3. Borrow & Lend (Ledger)
+        val borrowLend = allBorrowLendItems.value
+        sb.append("BORROW & LEND LEDGER ITEMS:\n")
+        if (borrowLend.isEmpty()) {
+            sb.append("- No active borrow/lend records.\n")
+        } else {
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            borrowLend.forEach { bl ->
+                val typeWord = if (bl.type == "Borrowed") "Borrowed from" else "Lent to"
+                val dateStr = dateFormat.format(Date(bl.date))
+                val dueDateStr = dateFormat.format(Date(bl.dueDate))
+                sb.append("- $typeWord ${bl.personName}: ₹${bl.amount} (Paid: ₹${bl.paidAmount}, Date: $dateStr, Due Date: $dueDateStr, Status: ${bl.status})\n")
+            }
+        }
+        sb.append("\n")
+
+        // 4. Transactions Ledger
+        val transactions = allTransactions.value
+        sb.append("TRANSACTION ENTRIES (Total: ${transactions.size}):\n")
+        if (transactions.isEmpty()) {
+            sb.append("- No transaction entries logged yet.\n")
+        } else {
+            val latestTxs = transactions.sortedByDescending { it.timestamp }.take(200)
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            latestTxs.forEach { tx ->
+                val typeWord = if (tx.type == "Income") "Income (+)" else "Expense (-)"
+                val dateStr = dateFormat.format(Date(tx.timestamp))
+                val aliasText = if (tx.merchantAlias.isNotEmpty()) " (Alias: ${tx.merchantAlias})" else ""
+                sb.append("- [$dateStr] $typeWord: ₹${tx.amount} at ${tx.merchantName}$aliasText. Category: ${tx.categoryName}. Payment: ${tx.paymentMethod} (${tx.bankAccountName}). Tags: ${tx.tags}. Notes: ${tx.notes}\n")
+            }
+        }
+        
+        return sb.toString()
+    }
+
+    fun sendChatMessage(messageText: String) {
+        if (messageText.isBlank()) return
+        
+        val userMsg = ChatMessage(role = "user", content = messageText)
+        chatMessages.value = chatMessages.value + userMsg
+        
+        isChatLoading.value = true
+        
+        viewModelScope.launch {
+            try {
+                val contextLedger = compileLedgerContext()
+                val currentHistory = chatMessages.value.dropLast(1)
+                
+                val response = GeminiService.askGemini(
+                    question = messageText,
+                    contextLedger = contextLedger,
+                    history = currentHistory
+                )
+                
+                chatMessages.value = chatMessages.value + ChatMessage(role = "model", content = response)
+            } catch (e: Exception) {
+                chatMessages.value = chatMessages.value + ChatMessage(
+                    role = "model",
+                    content = "Error processing response: ${e.localizedMessage ?: e.message}"
+                )
+            } finally {
+                isChatLoading.value = false
+            }
+        }
+    }
+
+    fun clearChatHistory() {
+        chatMessages.value = emptyList()
+    }
 }
 
 // Support Models for AI Intelligence

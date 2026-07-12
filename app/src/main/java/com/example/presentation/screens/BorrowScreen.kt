@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import com.example.presentation.components.draggableFab
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -29,6 +30,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.VaultFlowApplication
 import com.example.domain.model.BorrowLendItem
+import com.example.presentation.components.DeleteConfirmationDialog
 import com.example.presentation.viewmodel.BorrowLendViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -58,6 +60,7 @@ fun BorrowScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedItemForEdit by remember { mutableStateOf<BorrowLendItem?>(null) }
     var itemForRepay by remember { mutableStateOf<BorrowLendItem?>(null) }
+    var itemToDelete by remember { mutableStateOf<BorrowLendItem?>(null) }
     var repayAmountText by remember { mutableStateOf("") }
     var repayNotesText by remember { mutableStateOf("") }
 
@@ -89,7 +92,9 @@ fun BorrowScreen(
                 onClick = { showAddDialog = true },
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.testTag("borrow_fab")
+                modifier = Modifier
+                    .draggableFab()
+                    .testTag("borrow_fab")
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add Borrow/Lend")
             }
@@ -273,7 +278,7 @@ fun BorrowScreen(
                             onRepayClick = { itemForRepay = item },
                             onMarkCompleted = { viewModel.markCompleted(item) },
                             onEditClick = { selectedItemForEdit = item },
-                            onDeleteClick = { viewModel.deleteBorrowLendItem(item) }
+                            onDeleteClick = { itemToDelete = item }
                         )
                     }
                     item {
@@ -346,6 +351,18 @@ fun BorrowScreen(
         )
     }
 
+    if (itemToDelete != null) {
+        DeleteConfirmationDialog(
+            onConfirm = {
+                viewModel.deleteBorrowLendItem(itemToDelete!!)
+                itemToDelete = null
+            },
+            onDismiss = { itemToDelete = null },
+            title = "Delete Debt/Loan Record",
+            message = "Are you sure you want to delete the record for ${itemToDelete!!.personName} of ₹${itemToDelete!!.amount}?"
+        )
+    }
+
     // Add / Edit Dialog Form
     if (showAddDialog || selectedItemForEdit != null) {
         val editMode = selectedItemForEdit != null
@@ -367,6 +384,8 @@ fun BorrowScreen(
         var dateMs by remember { mutableStateOf(editingItem?.date ?: System.currentTimeMillis()) }
         var dueDateMs by remember { mutableStateOf(editingItem?.dueDate ?: (System.currentTimeMillis() + 7 * 24 * 60 * 60 * 1000L)) }
         var timeText by remember { mutableStateOf(editingItem?.time ?: "12:00 PM") }
+
+        val df = remember { SimpleDateFormat("dd MMM yyyy", java.util.Locale.getDefault()) }
 
         AlertDialog(
             onDismissRequest = {
@@ -518,26 +537,59 @@ fun BorrowScreen(
                     }
 
                     item {
-                        // Date picker button representation
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Button(
-                                onClick = { dateMs = System.currentTimeMillis() },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
-                            ) {
-                                Text("Today Date", fontSize = 11.sp)
-                            }
+                            OutlinedTextField(
+                                value = df.format(Date(dateMs)),
+                                onValueChange = {},
+                                label = { Text("Date") },
+                                readOnly = true,
+                                trailingIcon = {
+                                    IconButton(onClick = {
+                                        val cal = Calendar.getInstance().apply { timeInMillis = dateMs }
+                                        android.app.DatePickerDialog(
+                                            context,
+                                            { _, y, m, d ->
+                                                val sel = Calendar.getInstance().apply { set(y, m, d) }
+                                                dateMs = sel.timeInMillis
+                                            },
+                                            cal.get(Calendar.YEAR),
+                                            cal.get(Calendar.MONTH),
+                                            cal.get(Calendar.DAY_OF_MONTH)
+                                        ).show()
+                                    }) {
+                                        Icon(Icons.Default.DateRange, contentDescription = "Select Date")
+                                    }
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
 
-                            Button(
-                                onClick = { dueDateMs = System.currentTimeMillis() + 14 * 24 * 60 * 60 * 1000L },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
-                            ) {
-                                Text("+14 Days Due", fontSize = 11.sp)
-                            }
+                            OutlinedTextField(
+                                value = df.format(Date(dueDateMs)),
+                                onValueChange = {},
+                                label = { Text("Due Date") },
+                                readOnly = true,
+                                trailingIcon = {
+                                    IconButton(onClick = {
+                                        val cal = Calendar.getInstance().apply { timeInMillis = dueDateMs }
+                                        android.app.DatePickerDialog(
+                                            context,
+                                            { _, y, m, d ->
+                                                val sel = Calendar.getInstance().apply { set(y, m, d) }
+                                                dueDateMs = sel.timeInMillis
+                                            },
+                                            cal.get(Calendar.YEAR),
+                                            cal.get(Calendar.MONTH),
+                                            cal.get(Calendar.DAY_OF_MONTH)
+                                        ).show()
+                                    }) {
+                                        Icon(Icons.Default.DateRange, contentDescription = "Select Due Date")
+                                    }
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
                         }
                     }
                 }

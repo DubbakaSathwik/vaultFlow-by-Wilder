@@ -1,6 +1,7 @@
 package com.example.presentation.screens.dashboard
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -25,6 +26,7 @@ import java.util.*
 @Composable
 fun UpcomingPaymentsSection(
     payments: List<UpcomingPayment>,
+    onSeeAllClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val currencyFormatter = remember {
@@ -63,7 +65,8 @@ fun UpcomingPaymentsSection(
                     text = "See All",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable { onSeeAllClick() }
                 )
             }
 

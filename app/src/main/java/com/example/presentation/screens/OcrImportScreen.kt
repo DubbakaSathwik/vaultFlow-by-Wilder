@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
 import com.example.domain.model.OcrHistory
+import com.example.presentation.components.DeleteConfirmationDialog
 import com.example.presentation.viewmodel.OcrUiState
 import com.example.presentation.viewmodel.OcrViewModel
 import java.text.SimpleDateFormat
@@ -235,6 +236,19 @@ fun IdleOcrView(
     }
 
     var selectedHistoryReceiptForPreview by remember { mutableStateOf<OcrHistory?>(null) }
+    var ocrHistoryToDelete by remember { mutableStateOf<OcrHistory?>(null) }
+
+    if (ocrHistoryToDelete != null) {
+        DeleteConfirmationDialog(
+            onConfirm = {
+                viewModel.deleteReceiptFromHistory(ocrHistoryToDelete!!)
+                ocrHistoryToDelete = null
+            },
+            onDismiss = { ocrHistoryToDelete = null },
+            title = "Delete OCR Receipt History",
+            message = "Are you sure you want to delete this scanned receipt history for ${ocrHistoryToDelete!!.merchantName} of ₹${ocrHistoryToDelete!!.amount ?: 0.0}?"
+        )
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -476,7 +490,7 @@ fun IdleOcrView(
                                         style = MaterialTheme.typography.bodyLarge
                                     )
                                     IconButton(
-                                        onClick = { viewModel.deleteReceiptFromHistory(ocrHistory) },
+                                        onClick = { ocrHistoryToDelete = ocrHistory },
                                         modifier = Modifier.size(24.dp)
                                     ) {
                                         Icon(
@@ -683,7 +697,11 @@ fun ReviewOcrFormView(
     val categoriesList by viewModel.categories.collectAsState()
     val paymentsList by viewModel.paymentMethods.collectAsState()
 
+    val queue by viewModel.extractedQueue.collectAsState()
+    val queueIndex by viewModel.currentQueueIndex.collectAsState()
+
     var isReceiptPreviewExpanded by remember { mutableStateOf(false) }
+    var amountInput by remember(amount) { mutableStateOf(if (amount == 0.0) "" else amount.toString()) }
 
     LazyColumn(
         modifier = Modifier
@@ -692,6 +710,48 @@ fun ReviewOcrFormView(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Multi-transaction queue banner
+        if (queue.size > 1) {
+            item {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
+                    modifier = Modifier.testTag("multi_ocr_queue_banner")
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Multi-Transaction Review",
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                text = "Item ${queueIndex + 1} of ${queue.size}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                            )
+                        }
+                        Button(
+                            onClick = { viewModel.skipCurrentTransaction() },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                            modifier = Modifier.testTag("skip_ocr_queue_button")
+                        ) {
+                            Icon(Icons.Default.SkipNext, contentDescription = "Skip")
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Skip", fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
+        }
+
         // 1. Image preview and quick actions
         item {
             Card(
@@ -797,8 +857,11 @@ fun ReviewOcrFormView(
 
                     // Amount
                     OutlinedTextField(
-                        value = amount.toString(),
-                        onValueChange = { viewModel.reviewAmount.value = it.toDoubleOrNull() ?: 0.0 },
+                        value = amountInput,
+                        onValueChange = {
+                            amountInput = it
+                            viewModel.reviewAmount.value = it.toDoubleOrNull() ?: 0.0
+                        },
                         label = { Text("Amount (₹)") },
                         leadingIcon = { Text("₹", fontWeight = FontWeight.Bold) },
                         singleLine = true,

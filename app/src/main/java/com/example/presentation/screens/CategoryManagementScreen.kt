@@ -23,6 +23,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import com.example.presentation.components.draggableFab
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -77,7 +78,9 @@ fun CategoryManagementScreen(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.testTag("add_category_fab")
+                modifier = Modifier
+                    .draggableFab()
+                    .testTag("add_category_fab")
             ) {
                 Icon(Icons.Default.Add, "Add Category")
             }

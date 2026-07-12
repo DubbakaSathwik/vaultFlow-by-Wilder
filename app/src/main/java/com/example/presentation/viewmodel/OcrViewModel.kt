@@ -7,6 +7,7 @@ import android.provider.MediaStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.ocr.OcrProcessor
+import com.example.data.ocr.GeminiService
 import com.example.domain.model.*
 import com.example.domain.repository.VaultRepository
 import kotlinx.coroutines.flow.*
@@ -51,6 +52,10 @@ class OcrViewModel(private val repository: VaultRepository) : ViewModel() {
     val reviewNotes = MutableStateFlow("")
     val reviewTags = MutableStateFlow("")
     val reviewTransactionType = MutableStateFlow("Outflow") // "Inflow" or "Outflow"
+
+    // Multi-transaction extraction queue state
+    val extractedQueue = MutableStateFlow<List<ExtractedReceipt>>(emptyList())
+    val currentQueueIndex = MutableStateFlow(0)
 
     // Image state
     val receiptImageUri = MutableStateFlow<Uri?>(null)
@@ -108,11 +113,52 @@ class OcrViewModel(private val repository: VaultRepository) : ViewModel() {
         _uiState.value = OcrUiState.Scanning
         viewModelScope.launch {
             try {
-                val extracted = OcrProcessor.recognizeText(bitmap)
-                populateReviewFields(extracted)
-                _uiState.value = OcrUiState.Review(extracted)
+                val geminiResult = GeminiService.extractReceiptWithGemini(bitmap)
+                if (geminiResult != null && geminiResult.transactions.isNotEmpty()) {
+                    val mappedReceipts = geminiResult.transactions.map { txJson ->
+                        ExtractedReceipt(
+                            amount = txJson.amount,
+                            merchantName = txJson.merchantName ?: "Unknown Merchant",
+                            dateStr = txJson.dateStr ?: SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date()),
+                            timeStr = txJson.timeStr ?: SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date()),
+                            paymentApp = txJson.paymentApp ?: "UPI",
+                            bankName = txJson.bankName ?: "Cash/Default",
+                            last4Digits = txJson.last4Digits ?: "",
+                            upiId = txJson.upiId ?: "",
+                            transactionId = txJson.transactionId ?: "",
+                            referenceNumber = txJson.referenceNumber ?: "",
+                            accountHolder = txJson.accountHolder ?: "",
+                            paymentStatus = txJson.paymentStatus ?: "Successful",
+                            rawText = "Extracted via Gemini AI",
+                            confidence = 98.0
+                        )
+                    }
+
+                    extractedQueue.value = mappedReceipts
+                    currentQueueIndex.value = 0
+                    
+                    val firstReceipt = mappedReceipts[0]
+                    populateReviewFields(firstReceipt)
+                    _uiState.value = OcrUiState.Review(firstReceipt)
+                } else {
+                    // Fallback to offline local ML Kit
+                    val extracted = OcrProcessor.recognizeText(bitmap)
+                    extractedQueue.value = emptyList()
+                    currentQueueIndex.value = 0
+                    populateReviewFields(extracted)
+                    _uiState.value = OcrUiState.Review(extracted)
+                }
             } catch (e: Exception) {
-                _uiState.value = OcrUiState.Error("OCR processing failed: ${e.message}")
+                // Secure fallback in case of any network/API errors
+                try {
+                    val extracted = OcrProcessor.recognizeText(bitmap)
+                    extractedQueue.value = emptyList()
+                    currentQueueIndex.value = 0
+                    populateReviewFields(extracted)
+                    _uiState.value = OcrUiState.Review(extracted)
+                } catch (innerEx: Exception) {
+                    _uiState.value = OcrUiState.Error("OCR processing failed: ${innerEx.message}")
+                }
             }
         }
     }
@@ -300,7 +346,17 @@ class OcrViewModel(private val repository: VaultRepository) : ViewModel() {
             // Trigger Learning Systems (Sections 11, 12, 13, 14)
             triggerLearning(origMerch, finalMerch, reviewCategory.value, reviewPaymentMethod.value, bankId, bankName)
 
-            _uiState.value = OcrUiState.Success(newTxId)
+            val nextIndex = currentQueueIndex.value + 1
+            if (nextIndex < extractedQueue.value.size) {
+                currentQueueIndex.value = nextIndex
+                val nextReceipt = extractedQueue.value[nextIndex]
+                populateReviewFields(nextReceipt)
+                _uiState.value = OcrUiState.Review(nextReceipt)
+            } else {
+                extractedQueue.value = emptyList()
+                currentQueueIndex.value = 0
+                _uiState.value = OcrUiState.Success(newTxId)
+            }
         }
     }
 
@@ -375,12 +431,28 @@ class OcrViewModel(private val repository: VaultRepository) : ViewModel() {
         }
     }
 
+    fun skipCurrentTransaction() {
+        val nextIndex = currentQueueIndex.value + 1
+        if (nextIndex < extractedQueue.value.size) {
+            currentQueueIndex.value = nextIndex
+            val nextReceipt = extractedQueue.value[nextIndex]
+            viewModelScope.launch {
+                populateReviewFields(nextReceipt)
+                _uiState.value = OcrUiState.Review(nextReceipt)
+            }
+        } else {
+            resetState()
+        }
+    }
+
     fun resetState() {
         receiptImageUri.value = null
         receiptImageBitmap.value = null
         imageRotation.value = 0f
         showDuplicateWarning.value = false
         potentialDuplicate.value = null
+        extractedQueue.value = emptyList()
+        currentQueueIndex.value = 0
         _uiState.value = OcrUiState.Idle
     }
 }

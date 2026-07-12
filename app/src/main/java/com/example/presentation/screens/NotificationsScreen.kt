@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import com.example.presentation.components.draggableFab
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -143,7 +144,9 @@ fun NotificationsScreen(
                     onClick = { showAddReminderDialog = true },
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.testTag("reminder_fab")
+                    modifier = Modifier
+                        .draggableFab()
+                        .testTag("reminder_fab")
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Add Reminder")
                 }

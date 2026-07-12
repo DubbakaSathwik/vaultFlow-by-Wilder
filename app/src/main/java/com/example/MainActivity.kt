@@ -13,6 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.example.presentation.screens.VaultFlowLockScreen
 import com.example.presentation.navigation.NavGraph
 import com.example.presentation.viewmodel.MainViewModel
 import com.example.presentation.viewmodel.SettingsViewModel
@@ -60,16 +64,28 @@ class MainActivity : ComponentActivity() {
             val themeMode by mainViewModel.themeMode.collectAsState()
             val useDynamicColor by mainViewModel.useDynamicColor.collectAsState()
 
+            val pinEnabled by settingsViewModel.pinEnabled.collectAsState()
+            val pinCode by settingsViewModel.pinCode.collectAsState()
+            var isUnlocked by remember { mutableStateOf(false) }
+
             VaultFlowTheme(
                 themeMode = themeMode,
                 useDynamicColor = useDynamicColor
             ) {
-                NavGraph(
-                    mainViewModel = mainViewModel,
-                    settingsViewModel = settingsViewModel,
-                    sharedImageUri = sharedImageUri,
-                    modifier = Modifier.fillMaxSize()
-                )
+                if (pinEnabled && !isUnlocked) {
+                    VaultFlowLockScreen(
+                        correctPin = pinCode,
+                        onUnlockSuccess = { isUnlocked = true },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    NavGraph(
+                        mainViewModel = mainViewModel,
+                        settingsViewModel = settingsViewModel,
+                        sharedImageUri = sharedImageUri,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
         }
     }

@@ -23,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
+import com.example.presentation.components.draggableFab
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -125,7 +126,9 @@ fun TransactionScreen(
                     },
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.testTag("add_transaction_fab")
+                    modifier = Modifier
+                        .draggableFab()
+                        .testTag("add_transaction_fab")
                 ) {
                     Icon(imageVector = Icons.Default.Add, contentDescription = "Add Transaction")
                 }

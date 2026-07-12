@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.domain.model.Merchant
+import com.example.presentation.components.draggableFab
 import com.example.presentation.viewmodel.IntelligenceViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,7 +77,9 @@ fun MerchantDatabaseScreen(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.testTag("add_merchant_fab")
+                modifier = Modifier
+                    .draggableFab()
+                    .testTag("add_merchant_fab")
             ) {
                 Icon(Icons.Default.Add, "Add Merchant")
             }

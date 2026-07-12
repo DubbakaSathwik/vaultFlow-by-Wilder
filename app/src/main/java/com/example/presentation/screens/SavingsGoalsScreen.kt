@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import com.example.presentation.components.draggableFab
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -158,7 +159,9 @@ fun SavingsGoalsScreen(
                     onClick = { showCreateDialog = true },
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.testTag("create_goal_fab")
+                    modifier = Modifier
+                        .draggableFab()
+                        .testTag("create_goal_fab")
                 ) {
                     Icon(imageVector = Icons.Default.Add, contentDescription = "Add Savings Goal")
                 }

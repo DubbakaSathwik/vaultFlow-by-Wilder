@@ -64,7 +64,7 @@ object OcrProcessor {
         if (amount == null) {
             val numberPattern = Pattern.compile("\\b([0-9,]+\\.[0-9]{2})\\b")
             for (line in lines) {
-                if (line.contains("Paid", ignoreCase = true) || line.contains("Sent", ignoreCase = true) || line.contains("Debited", ignoreCase = true) || line.contains("Total", ignoreCase = true) || line.contains("Amount", ignoreCase = true)) {
+                if (line.contains("Paid", ignoreCase = true) || line.contains("Sent", ignoreCase = true) || line.contains("Debited", ignoreCase = true) || line.contains("Total", ignoreCase = true) || line.contains("Amount", ignoreCase = true) || line.contains("Rs", ignoreCase = true)) {
                     val matcher = numberPattern.matcher(line)
                     if (matcher.find()) {
                         val amtStr = matcher.group(1)?.replace(",", "")
@@ -72,6 +72,30 @@ object OcrProcessor {
                         if (amount != null) break
                     }
                 }
+            }
+        }
+
+        // Tertiary fallback: Look for any line containing just a number or simple float/integer
+        if (amount == null || amount == 0.0) {
+            val genericNumberPattern = Pattern.compile("\\b([0-9]+(?:\\.[0-9]{1,2})?)\\b")
+            for (line in lines) {
+                // Skip lines that look like dates, UPI Ref numbers, reference numbers or phone numbers
+                if (line.length > 8 && line.all { it.isDigit() }) continue
+                if (line.contains("/") || line.contains("-") || line.contains(":")) continue
+                
+                val matcher = genericNumberPattern.matcher(line)
+                while (matcher.find()) {
+                    val candidateStr = matcher.group(1)?.replace(",", "")
+                    val candidate = candidateStr?.toDoubleOrNull()
+                    if (candidate != null && candidate > 0.0 && candidate < 200000.0) {
+                        // Make sure it doesn't match a year or simple day/month
+                        if (candidateStr != "2024" && candidateStr != "2025" && candidateStr != "2026") {
+                            amount = candidate
+                            break
+                        }
+                    }
+                }
+                if (amount != null && amount > 0.0) break
             }
         }
 

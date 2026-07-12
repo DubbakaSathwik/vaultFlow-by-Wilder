@@ -26,6 +26,7 @@ import java.util.*
 fun RecentTransactionsSection(
     transactions: List<TransactionItem>,
     onTransactionClick: (String) -> Unit,
+    onSeeAllClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val currencyFormatter = remember {
@@ -64,7 +65,8 @@ fun RecentTransactionsSection(
                     text = "See All",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable { onSeeAllClick() }
                 )
             }
 

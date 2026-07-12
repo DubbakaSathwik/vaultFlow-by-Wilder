@@ -29,6 +29,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.lazy.rememberLazyListState
+import com.example.data.ocr.ChatMessage
 import com.example.presentation.viewmodel.IntelligenceViewModel
 import com.example.presentation.viewmodel.TimelineEvent
 import com.example.presentation.viewmodel.FinancialReview
@@ -47,6 +49,7 @@ fun AiAssistantScreen(
     var selectedTab by remember { mutableStateOf(0) }
     
     val tabs = listOf(
+        "AI Co-Pilot Chat",
         "Score Breakdown",
         "Time Reviews",
         "Predictions & Safe Spends",
@@ -67,7 +70,7 @@ fun AiAssistantScreen(
                             modifier = Modifier.testTag("ai_assistant_title")
                         )
                         Text(
-                            text = "Offline Intelligent Co-Pilot",
+                            text = "Advanced AI Financial Co-Pilot",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                         )
@@ -140,285 +143,289 @@ fun AiAssistantScreen(
                     .fillMaxWidth()
                     .weight(1f)
             ) { targetTab ->
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    when (targetTab) {
-                        0 -> {
-                            // SCORE BREAKDOWN
-                            item {
-                                HealthScoreRadialSection(insights.healthScore)
-                            }
-                            item {
-                                Text(
-                                    text = "Detailed Category Explanations",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onBackground
-                                )
-                            }
-                            item {
-                                ScoreExplainerCard(
-                                    title = "Monthly Budget Safety",
-                                    score = insights.healthScore.budgetScore,
-                                    explanation = insights.healthScore.budgetExpl,
-                                    icon = Icons.Default.AccountBalanceWallet,
-                                    color = Color(0xFF38BDF8)
-                                )
-                            }
-                            item {
-                                ScoreExplainerCard(
-                                    title = "Savings & Investment Rate",
-                                    score = insights.healthScore.savingsScore,
-                                    explanation = insights.healthScore.savingsExpl,
-                                    icon = Icons.Default.Savings,
-                                    color = Color(0xFFA78BFA)
-                                )
-                            }
-                            item {
-                                ScoreExplainerCard(
-                                    title = "Debt & Lending Risk",
-                                    score = insights.healthScore.debtScore,
-                                    explanation = insights.healthScore.debtExpl,
-                                    icon = Icons.Default.Payments,
-                                    color = Color(0xFF10B981)
-                                )
-                            }
-                            item {
-                                ScoreExplainerCard(
-                                    title = "Logging & Habit Consistency",
-                                    score = insights.healthScore.consistencyScore,
-                                    explanation = insights.healthScore.consistencyExpl,
-                                    icon = Icons.Default.Timeline,
-                                    color = Color(0xFFFBBF24)
-                                )
-                            }
-                            item {
-                                ScoreExplainerCard(
-                                    title = "Subscription Fixed Overhead",
-                                    score = insights.healthScore.subscriptionsScore,
-                                    explanation = insights.healthScore.subscriptionsExpl,
-                                    icon = Icons.Default.Subscriptions,
-                                    color = Color(0xFFF43F5E)
-                                )
-                            }
-                            item {
-                                ScoreExplainerCard(
-                                    title = "Savings Goals Progress",
-                                    score = insights.healthScore.goalsScore,
-                                    explanation = insights.healthScore.goalsExpl,
-                                    icon = Icons.Default.Star,
-                                    color = Color(0xFF06B6D4)
-                                )
-                            }
-                        }
-                        1 -> {
-                            // TIME REVIEWS
-                            item {
-                                TimeReviewCard(
-                                    title = "Daily Financial Review",
-                                    review = insights.dailyReview,
-                                    icon = Icons.Default.Today,
-                                    gradient = Brush.linearGradient(listOf(Color(0xFF0EA5E9), Color(0xFF38BDF8)))
-                                )
-                            }
-                            item {
-                                TimeReviewCard(
-                                    title = "Weekly Financial Review",
-                                    review = insights.weeklyReview,
-                                    icon = Icons.Default.ViewWeek,
-                                    gradient = Brush.linearGradient(listOf(Color(0xFF8B5CF6), Color(0xFFA78BFA)))
-                                )
-                            }
-                            item {
-                                TimeReviewCard(
-                                    title = "Monthly Financial Review",
-                                    review = insights.monthlyReview,
-                                    icon = Icons.Default.CalendarMonth,
-                                    gradient = Brush.linearGradient(listOf(Color(0xFF10B981), Color(0xFF34D399)))
-                                )
-                            }
-                            item {
-                                TimeReviewCard(
-                                    title = "Yearly Financial Review",
-                                    review = insights.yearlyReview,
-                                    icon = Icons.Default.AutoAwesome,
-                                    gradient = Brush.linearGradient(listOf(Color(0xFFF59E0B), Color(0xFFFBBF24)))
-                                )
-                            }
-                        }
-                        2 -> {
-                            // PREDICTIONS & RECOMMENDATIONS
-                            item {
-                                ValueCard(
-                                    title = "Recommended Monthly Budget Limit",
-                                    value = "₹${insights.recommendedMonthlyBudget.toInt()}",
-                                    subtitle = "Engineered dynamically based on past 30 days income",
-                                    icon = Icons.Default.TrendingDown,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            item {
-                                ValueCard(
-                                    title = "Recommended Safe Daily Spending",
-                                    value = "₹${insights.recommendedDailySafeSpending.toInt()}",
-                                    subtitle = "Stay below this threshold to protect your savings",
-                                    icon = Icons.Default.OfflineBolt,
-                                    color = Color(0xFF10B981)
-                                )
-                            }
-                            item {
-                                ValueCard(
-                                    title = "Next Month Expense Prediction",
-                                    value = "₹${insights.expensePredictionNextMonth.toInt()}",
-                                    subtitle = "Projected spending trend based on local regression analysis",
-                                    icon = Icons.AutoMirrored.Filled.TrendingUp,
-                                    color = Color(0xFFF43F5E)
-                                )
-                            }
-                            item {
-                                PredictionsListSection(
-                                    title = "Savings Goals Projected Completions",
-                                    items = insights.goalCompletionPredictions,
-                                    icon = Icons.Default.HourglassBottom,
-                                    emptyMessage = "No active savings goals found to run predictions on."
-                                )
-                            }
-                        }
-                        3 -> {
-                            // ANOMALIES & DUPLICATES
-                            item {
-                                DuplicateTransactionsSection(insights.duplicateTransactions)
-                            }
-                            item {
-                                StandardListSection(
-                                    title = "Overspending Detection Alerts",
-                                    items = insights.overspendingAlerts,
-                                    icon = Icons.Default.Warning,
-                                    cardColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f),
-                                    textColor = MaterialTheme.colorScheme.error
-                                )
-                            }
-                            item {
-                                StandardListSection(
-                                    title = "Missing Transaction Suggestions",
-                                    items = insights.missingTransactionSuggestions,
-                                    icon = Icons.Default.Help,
-                                    cardColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                                    textColor = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
-                        4 -> {
-                            // PATTERNS & USAGE
-                            item {
-                                StandardListSection(
-                                    title = "Merchant Spending Analysis",
-                                    items = insights.merchantSpendingAnalysis,
-                                    icon = Icons.Default.Storefront
-                                )
-                            }
-                            item {
-                                StandardListSection(
-                                    title = "Category Distribution Analysis",
-                                    items = insights.categorySpendingAnalysis,
-                                    icon = Icons.Default.Category
-                                )
-                            }
-                            item {
-                                StandardListSection(
-                                    title = "Bank Account Interaction Volume",
-                                    items = insights.bankUsageAnalysis,
-                                    icon = Icons.Default.AccountBalance
-                                )
-                            }
-                            item {
-                                StandardListSection(
-                                    title = "Payment Methods Usage Stats",
-                                    items = insights.paymentMethodAnalysis,
-                                    icon = Icons.Default.CreditCard
-                                )
-                            }
-                        }
-                        5 -> {
-                            // MILESTONES TIMELINE
-                            item {
-                                Text(
-                                    text = "Chronological Milestones & Highlights",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            items(insights.healthTimeline) { event ->
-                                TimelineEventRow(event)
-                            }
-                        }
-                        6 -> {
-                            // STREAKS, ACHIEVEMENTS & TIPS
-                            item {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                                ) {
-                                    StreakBox(
-                                        title = "Spending Streak",
-                                        days = insights.spendingStreak,
-                                        subtitle = "Days under budget limit",
-                                        icon = Icons.Default.LocalFireDepartment,
-                                        color = Color(0xFFF97316),
-                                        modifier = Modifier.weight(1f)
+                if (targetTab == 0) {
+                    AiChatSection(viewModel)
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        when (targetTab) {
+                            1 -> {
+                                // SCORE BREAKDOWN
+                                item {
+                                    HealthScoreRadialSection(insights.healthScore)
+                                }
+                                item {
+                                    Text(
+                                        text = "Detailed Category Explanations",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onBackground
                                     )
-                                    StreakBox(
-                                        title = "Savings Streak",
-                                        days = insights.savingsStreak,
-                                        subtitle = "Consecutive savings months",
-                                        icon = Icons.Default.AutoAwesome,
-                                        color = Color(0xFF10B981),
-                                        modifier = Modifier.weight(1f)
+                                }
+                                item {
+                                    ScoreExplainerCard(
+                                        title = "Monthly Budget Safety",
+                                        score = insights.healthScore.budgetScore,
+                                        explanation = insights.healthScore.budgetExpl,
+                                        icon = Icons.Default.AccountBalanceWallet,
+                                        color = Color(0xFF38BDF8)
+                                    )
+                                }
+                                item {
+                                    ScoreExplainerCard(
+                                        title = "Savings & Investment Rate",
+                                        score = insights.healthScore.savingsScore,
+                                        explanation = insights.healthScore.savingsExpl,
+                                        icon = Icons.Default.Savings,
+                                        color = Color(0xFFA78BFA)
+                                    )
+                                }
+                                item {
+                                    ScoreExplainerCard(
+                                        title = "Debt & Lending Risk",
+                                        score = insights.healthScore.debtScore,
+                                        explanation = insights.healthScore.debtExpl,
+                                        icon = Icons.Default.Payments,
+                                        color = Color(0xFF10B981)
+                                    )
+                                }
+                                item {
+                                    ScoreExplainerCard(
+                                        title = "Logging & Habit Consistency",
+                                        score = insights.healthScore.consistencyScore,
+                                        explanation = insights.healthScore.consistencyExpl,
+                                        icon = Icons.Default.Timeline,
+                                        color = Color(0xFFFBBF24)
+                                    )
+                                }
+                                item {
+                                    ScoreExplainerCard(
+                                        title = "Subscription Fixed Overhead",
+                                        score = insights.healthScore.subscriptionsScore,
+                                        explanation = insights.healthScore.subscriptionsExpl,
+                                        icon = Icons.Default.Subscriptions,
+                                        color = Color(0xFFF43F5E)
+                                    )
+                                }
+                                item {
+                                    ScoreExplainerCard(
+                                        title = "Savings Goals Progress",
+                                        score = insights.healthScore.goalsScore,
+                                        explanation = insights.healthScore.goalsExpl,
+                                        icon = Icons.Default.Star,
+                                        color = Color(0xFF06B6D4)
                                     )
                                 }
                             }
-                            item {
-                                StandardListSection(
-                                    title = "Unlocked Achievements",
-                                    items = insights.achievements,
-                                    icon = Icons.Default.WorkspacePremium,
-                                    cardColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f),
-                                    textColor = MaterialTheme.colorScheme.tertiary
-                                )
+                            2 -> {
+                                // TIME REVIEWS
+                                item {
+                                    TimeReviewCard(
+                                        title = "Daily Financial Review",
+                                        review = insights.dailyReview,
+                                        icon = Icons.Default.Today,
+                                        gradient = Brush.linearGradient(listOf(Color(0xFF0EA5E9), Color(0xFF38BDF8)))
+                                    )
+                                }
+                                item {
+                                    TimeReviewCard(
+                                        title = "Weekly Financial Review",
+                                        review = insights.weeklyReview,
+                                        icon = Icons.Default.ViewWeek,
+                                        gradient = Brush.linearGradient(listOf(Color(0xFF8B5CF6), Color(0xFFA78BFA)))
+                                    )
+                                }
+                                item {
+                                    TimeReviewCard(
+                                        title = "Monthly Financial Review",
+                                        review = insights.monthlyReview,
+                                        icon = Icons.Default.CalendarMonth,
+                                        gradient = Brush.linearGradient(listOf(Color(0xFF10B981), Color(0xFF34D399)))
+                                    )
+                                }
+                                item {
+                                    TimeReviewCard(
+                                        title = "Yearly Financial Review",
+                                        review = insights.yearlyReview,
+                                        icon = Icons.Default.AutoAwesome,
+                                        gradient = Brush.linearGradient(listOf(Color(0xFFF59E0B), Color(0xFFFBBF24)))
+                                    )
+                                }
                             }
-                            item {
-                                StandardListSection(
-                                    title = "Dynamic Saving Recommendations",
-                                    items = insights.savingRecommendations,
-                                    icon = Icons.Default.Lightbulb
-                                )
+                            3 -> {
+                                // PREDICTIONS & RECOMMENDATIONS
+                                item {
+                                    ValueCard(
+                                        title = "Recommended Monthly Budget Limit",
+                                        value = "₹${insights.recommendedMonthlyBudget.toInt()}",
+                                        subtitle = "Engineered dynamically based on past 30 days income",
+                                        icon = Icons.Default.TrendingDown,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                item {
+                                    ValueCard(
+                                        title = "Recommended Safe Daily Spending",
+                                        value = "₹${insights.recommendedDailySafeSpending.toInt()}",
+                                        subtitle = "Stay below this threshold to protect your savings",
+                                        icon = Icons.Default.OfflineBolt,
+                                        color = Color(0xFF10B981)
+                                    )
+                                }
+                                item {
+                                    ValueCard(
+                                        title = "Next Month Expense Prediction",
+                                        value = "₹${insights.expensePredictionNextMonth.toInt()}",
+                                        subtitle = "Projected spending trend based on local regression analysis",
+                                        icon = Icons.AutoMirrored.Filled.TrendingUp,
+                                        color = Color(0xFFF43F5E)
+                                    )
+                                }
+                                item {
+                                    PredictionsListSection(
+                                        title = "Savings Goals Projected Completions",
+                                        items = insights.goalCompletionPredictions,
+                                        icon = Icons.Default.HourglassBottom,
+                                        emptyMessage = "No active savings goals found to run predictions on."
+                                    )
+                                }
                             }
-                            item {
-                                StandardListSection(
-                                    title = "Fixed Overheads & Subscription Analysis",
-                                    items = insights.subscriptionAnalysis,
-                                    icon = Icons.Default.Subscriptions
-                                )
+                            4 -> {
+                                // ANOMALIES & DUPLICATES
+                                item {
+                                    DuplicateTransactionsSection(insights.duplicateTransactions)
+                                }
+                                item {
+                                    StandardListSection(
+                                        title = "Overspending Detection Alerts",
+                                        items = insights.overspendingAlerts,
+                                        icon = Icons.Default.Warning,
+                                        cardColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f),
+                                        textColor = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                                item {
+                                    StandardListSection(
+                                        title = "Missing Transaction Suggestions",
+                                        items = insights.missingTransactionSuggestions,
+                                        icon = Icons.Default.Help,
+                                        cardColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                        textColor = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
                             }
-                            item {
-                                StandardListSection(
-                                    title = "Ledger Borrow & Lend Risk Analysis",
-                                    items = insights.borrowLendRiskAnalysis,
-                                    icon = Icons.Default.VerifiedUser
-                                )
+                            5 -> {
+                                // PATTERNS & USAGE
+                                item {
+                                    StandardListSection(
+                                        title = "Merchant Spending Analysis",
+                                        items = insights.merchantSpendingAnalysis,
+                                        icon = Icons.Default.Storefront
+                                    )
+                                }
+                                item {
+                                    StandardListSection(
+                                        title = "Category Distribution Analysis",
+                                        items = insights.categorySpendingAnalysis,
+                                        icon = Icons.Default.Category
+                                    )
+                                }
+                                item {
+                                    StandardListSection(
+                                        title = "Bank Account Interaction Volume",
+                                        items = insights.bankUsageAnalysis,
+                                        icon = Icons.Default.AccountBalance
+                                    )
+                                }
+                                item {
+                                    StandardListSection(
+                                        title = "Payment Methods Usage Stats",
+                                        items = insights.paymentMethodAnalysis,
+                                        icon = Icons.Default.CreditCard
+                                    )
+                                }
                             }
-                            item {
-                                StandardListSection(
-                                    title = "Upcoming Financial Events (5 Days)",
-                                    items = insights.upcomingFinancialEvents,
-                                    icon = Icons.Default.Event,
-                                    cardColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
-                                    textColor = MaterialTheme.colorScheme.primary
-                                )
+                            6 -> {
+                                // MILESTONES TIMELINE
+                                item {
+                                    Text(
+                                        text = "Chronological Milestones & Highlights",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                items(insights.healthTimeline) { event ->
+                                    TimelineEventRow(event)
+                                }
+                            }
+                            7 -> {
+                                // STREAKS, ACHIEVEMENTS & TIPS
+                                item {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        StreakBox(
+                                            title = "Spending Streak",
+                                            days = insights.spendingStreak,
+                                            subtitle = "Days under budget limit",
+                                            icon = Icons.Default.LocalFireDepartment,
+                                            color = Color(0xFFF97316),
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        StreakBox(
+                                            title = "Savings Streak",
+                                            days = insights.savingsStreak,
+                                            subtitle = "Consecutive savings months",
+                                            icon = Icons.Default.AutoAwesome,
+                                            color = Color(0xFF10B981),
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                }
+                                item {
+                                    StandardListSection(
+                                        title = "Unlocked Achievements",
+                                        items = insights.achievements,
+                                        icon = Icons.Default.WorkspacePremium,
+                                        cardColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f),
+                                        textColor = MaterialTheme.colorScheme.tertiary
+                                    )
+                                }
+                                item {
+                                    StandardListSection(
+                                        title = "Dynamic Saving Recommendations",
+                                        items = insights.savingRecommendations,
+                                        icon = Icons.Default.Lightbulb
+                                    )
+                                }
+                                item {
+                                    StandardListSection(
+                                        title = "Fixed Overheads & Subscription Analysis",
+                                        items = insights.subscriptionAnalysis,
+                                        icon = Icons.Default.Subscriptions
+                                    )
+                                }
+                                item {
+                                    StandardListSection(
+                                        title = "Ledger Borrow & Lend Risk Analysis",
+                                        items = insights.borrowLendRiskAnalysis,
+                                        icon = Icons.Default.VerifiedUser
+                                    )
+                                }
+                                item {
+                                    StandardListSection(
+                                        title = "Upcoming Financial Events (5 Days)",
+                                        items = insights.upcomingFinancialEvents,
+                                        icon = Icons.Default.Event,
+                                        cardColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
+                                        textColor = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
                         }
                     }
@@ -919,3 +926,221 @@ fun StreakBox(
         }
     }
 }
+
+@Composable
+fun AiChatSection(
+    viewModel: IntelligenceViewModel,
+    modifier: Modifier = Modifier
+) {
+    val chatMessages by viewModel.chatMessages.collectAsState()
+    val isLoading by viewModel.isChatLoading.collectAsState()
+    var inputQuery by remember { mutableStateOf("") }
+    val listState = rememberLazyListState()
+
+    // Auto-scroll to bottom when new messages arrive
+    LaunchedEffect(chatMessages.size) {
+        if (chatMessages.isNotEmpty()) {
+            listState.animateScrollToItem(chatMessages.size - 1)
+        }
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        // Chat list
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(bottom = 12.dp)
+        ) {
+            if (chatMessages.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillParentMaxSize()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(72.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ChatBubbleOutline,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(36.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Conversational AI Finance Co-Pilot",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Ask anything about your cashflow, budgets, goals, or debts!\nTry: \"How much did I pay to xyz friend this month?\" or \"Show my top expenses.\"",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                                textAlign = TextAlign.Center,
+                                lineHeight = 16.sp
+                            )
+                        }
+                    }
+                }
+            } else {
+                items(chatMessages) { msg ->
+                    ChatBubble(msg)
+                }
+            }
+
+            if (isLoading) {
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Card(
+                            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 4.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = "Analyzing ledger and responding...",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Input bar
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedTextField(
+                value = inputQuery,
+                onValueChange = { inputQuery = it },
+                placeholder = { Text("Ask Co-Pilot...", fontSize = 14.sp) },
+                singleLine = true,
+                shape = RoundedCornerShape(24.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                ),
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("ai_chat_input_field"),
+                trailingIcon = {
+                    if (chatMessages.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.clearChatHistory() }) {
+                            Icon(
+                                imageVector = Icons.Default.DeleteOutline,
+                                contentDescription = "Clear History",
+                                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                }
+            )
+
+            FloatingActionButton(
+                onClick = {
+                    if (inputQuery.isNotBlank() && !isLoading) {
+                        val query = inputQuery
+                        inputQuery = ""
+                        viewModel.sendChatMessage(query)
+                    }
+                },
+                shape = CircleShape,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier
+                    .size(48.dp)
+                    .testTag("ai_chat_send_button")
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Send,
+                    contentDescription = "Send Message",
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ChatBubble(msg: ChatMessage) {
+    val isUser = msg.role == "user"
+    
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+    ) {
+        Card(
+            shape = if (isUser) {
+                RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 4.dp)
+            } else {
+                RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 4.dp)
+            },
+            colors = CardDefaults.cardColors(
+                containerColor = if (isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+            ),
+            modifier = Modifier
+                .widthIn(max = 290.dp)
+                .testTag(if (isUser) "chat_bubble_user" else "chat_bubble_model")
+        ) {
+            Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+                Text(
+                    text = if (isUser) "You" else "Finance Co-Pilot",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp,
+                    color = if (isUser) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f) else MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = msg.content,
+                    fontSize = 13.sp,
+                    color = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 18.sp
+                )
+            }
+        }
+    }
+}
+

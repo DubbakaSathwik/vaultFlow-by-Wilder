@@ -30,10 +30,13 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.presentation.screens.dashboard.*
 import com.example.presentation.viewmodel.HomeViewModel
+import com.example.presentation.viewmodel.ProfileViewModel
+import coil.compose.AsyncImage
 import com.example.presentation.viewmodel.BorrowLendViewModel
 import com.example.presentation.viewmodel.ReminderViewModel
 import com.example.presentation.viewmodel.CalendarViewModel
 import com.example.presentation.viewmodel.SavingsGoalViewModel
+import com.example.presentation.components.draggableFab
 import androidx.lifecycle.ViewModelProvider
 import com.example.VaultFlowApplication
 import java.text.SimpleDateFormat
@@ -97,11 +100,22 @@ fun HomeScreen(
             }
         }
     )
+    val profileViewModel: ProfileViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                return ProfileViewModel(appContainer.vaultRepository) as T
+            }
+        }
+    )
 
     val dbBorrowLendItems by borrowLendViewModel.allItems.collectAsState()
     val dbTodayReminders by reminderViewModel.todayReminders.collectAsState()
     val dbGoals by savingsGoalViewModel.allGoals.collectAsState()
     val dbTransactions by calendarViewModel.transactions.collectAsState()
+    val dbProfile by profileViewModel.userProfile.collectAsState()
+
+    var showWidgetDialog by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -147,7 +161,7 @@ fun HomeScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Pranav",
+                            text = dbProfile?.name ?: "Pranav",
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
@@ -211,12 +225,22 @@ fun HomeScreen(
                                 .testTag("profile_avatar_button"),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = "P",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp
-                            )
+                            val avatarUrl = dbProfile?.profilePictureUri ?: ""
+                            if (avatarUrl.isNotEmpty()) {
+                                AsyncImage(
+                                    model = avatarUrl,
+                                    contentDescription = "Profile picture",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                )
+                            } else {
+                                Text(
+                                    text = dbProfile?.name?.take(1)?.uppercase() ?: "P",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp
+                                )
+                            }
                         }
                     }
                 }
@@ -444,7 +468,7 @@ fun HomeScreen(
                                     fontWeight = FontWeight.Bold
                                 )
                             }
-                            TextButton(onClick = { viewModel.triggerQuickAction("borrow") }) {
+                            TextButton(onClick = onBorrowLendClick) {
                                 Text("Lend Ledger", fontSize = 12.sp)
                                 Icon(Icons.Default.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
                             }
@@ -692,7 +716,8 @@ fun HomeScreen(
             // 11. UPCOMING PAYMENTS TIMELINE (Section 9)
             item {
                 UpcomingPaymentsSection(
-                    payments = state.upcomingPayments
+                    payments = state.upcomingPayments,
+                    onSeeAllClick = onCalendarClick
                 )
             }
 
@@ -718,7 +743,8 @@ fun HomeScreen(
             item {
                 RecentTransactionsSection(
                     transactions = state.recentTransactions,
-                    onTransactionClick = { /* Clicked */ }
+                    onTransactionClick = { /* Clicked */ },
+                    onSeeAllClick = onCalendarClick
                 )
             }
 
@@ -745,11 +771,6 @@ fun HomeScreen(
                 MonthlyComparisonSection()
             }
 
-            // 19. EXPENSE HEATMAP (Section 17)
-            item {
-                ExpenseHeatmapSection()
-            }
-
             // 20. FINANCE INSIGHTS STATS (Section 18)
             item {
                 FinanceInsightsSection()
@@ -760,6 +781,7 @@ fun HomeScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clickable { showWidgetDialog = true }
                         .testTag("home_widget_placeholder_card"),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     shape = RoundedCornerShape(24.dp)
@@ -945,18 +967,23 @@ fun HomeScreen(
                     ) {
                         FabSubItem("New Income", Icons.Default.TrendingUp, Color(0xFF10B981)) {
                             viewModel.toggleFab()
+                            onAddExpenseClick()
                         }
                         FabSubItem("New Expense", Icons.Default.TrendingDown, Color(0xFFEF4444)) {
                             viewModel.toggleFab()
+                            onAddExpenseClick()
                         }
                         FabSubItem("Money Transfer", Icons.Default.SyncAlt, Color(0xFF3B82F6)) {
                             viewModel.toggleFab()
+                            onAddExpenseClick()
                         }
                         FabSubItem("New Borrow/Lend", Icons.Default.Handshake, Color(0xFFF59E0B)) {
                             viewModel.toggleFab()
+                            onBorrowLendClick()
                         }
                         FabSubItem("New Goal", Icons.Default.Star, Color(0xFF8B5CF6)) {
                             viewModel.toggleFab()
+                            onSavingsGoalsClick()
                         }
                     }
                 }
@@ -969,6 +996,7 @@ fun HomeScreen(
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier
                         .scale(1.1f)
+                        .draggableFab()
                         .testTag("expandable_fab_trigger")
                 ) {
                     Icon(
@@ -978,6 +1006,31 @@ fun HomeScreen(
                     )
                 }
             }
+        }
+
+        if (showWidgetDialog) {
+            AlertDialog(
+                onDismissRequest = { showWidgetDialog = false },
+                title = { Text("VaultFlow Home Widget", fontWeight = FontWeight.Bold) },
+                text = {
+                    Text(
+                        "Your VaultFlow Home Screen Widget is fully active and integrated!\n\n" +
+                        "To add it to your launcher home screen:\n\n" +
+                        "1. Go to your device Home Screen.\n" +
+                        "2. Long press on any empty space.\n" +
+                        "3. Tap 'Widgets' / 'Add Widget'.\n" +
+                        "4. Search or scroll to find 'VaultFlow'.\n" +
+                        "5. Long-press the widget and place it!\n\n" +
+                        "Once added, it will securely sync your overall balance in real-time.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = { showWidgetDialog = false }) {
+                        Text("Got it")
+                    }
+                }
+            )
         }
     }
 }

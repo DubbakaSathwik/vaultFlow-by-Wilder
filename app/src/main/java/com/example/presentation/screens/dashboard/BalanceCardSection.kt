@@ -103,158 +103,163 @@ fun BalanceCardSection(
         )
     }
 
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(220.dp)
-            .clip(RoundedCornerShape(24.dp))
-            .pointerInput(Unit) {
-                detectDragGestures(
-                    onDragEnd = {
-                        if (offsetX > 150f) {
-                            // Swipe Right -> Prev Account
-                            val prev = if (currentIndex > 0) currentIndex - 1 else accounts.lastIndex
-                            onAccountChanged(prev)
-                        } else if (offsetX < -150f) {
-                            // Swipe Left -> Next Account
-                            val next = if (currentIndex < accounts.lastIndex) currentIndex + 1 else 0
-                            onAccountChanged(next)
-                        }
-                        offsetX = 0f
-                    },
-                    onDrag = { change, dragAmount ->
-                        change.consume()
-                        offsetX += dragAmount.x
-                    }
-                )
-            }
-            .testTag("balance_card_container"),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        shape = RoundedCornerShape(24.dp)
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(
+        Card(
             modifier = Modifier
-                .fillMaxSize()
-                .background(finalGradient)
-                .padding(24.dp)
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                // Top Row: Account Name & Type Indicator
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = currentAccount.name,
-                            color = Color.White.copy(alpha = 0.8f),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = currentAccount.type,
-                            color = Color.White.copy(alpha = 0.6f),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color.White.copy(alpha = 0.15f))
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = "VaultFlow Safe",
-                            color = Color.White,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                // Balance Number (Animated)
-                Text(
-                    text = currencyFormatter.format(animatedBalance.value),
-                    color = Color.White,
-                    style = MaterialTheme.typography.displayLarge.copy(fontSize = 36.sp),
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.testTag("balance_display_text")
-                )
-
-                // Bottom Row: Income, Expense, Savings Breakdown (only on Overall, or placeholder stats)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = "INFLOW",
-                            color = Color.White.copy(alpha = 0.6f),
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                        Text(
-                            text = currencyFormatter.format(state.monthlyIncome),
-                            color = Color(0xFF34D399),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    Column {
-                        Text(
-                            text = "OUTFLOW",
-                            color = Color.White.copy(alpha = 0.6f),
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                        Text(
-                            text = currencyFormatter.format(state.monthlyExpense),
-                            color = Color(0xFFF87171),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    Column {
-                        Text(
-                            text = "SAVED",
-                            color = Color.White.copy(alpha = 0.6f),
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                        Text(
-                            text = currencyFormatter.format(state.savings),
-                            color = Color(0xFF60A5FA),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-
-            // Carousel Indicators at the bottom center
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 2.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                accounts.forEachIndexed { idx, _ ->
-                    val isSelected = idx == currentIndex
-                    Box(
-                        modifier = Modifier
-                            .size(width = if (isSelected) 14.dp else 6.dp, height = 6.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (isSelected) Color.White else Color.White.copy(alpha = 0.3f)
-                            )
+                .fillMaxWidth()
+                .height(200.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .pointerInput(currentIndex) {
+                    detectDragGestures(
+                        onDragEnd = {
+                            if (offsetX > 150f) {
+                                // Swipe Right -> Prev Account
+                                val prev = if (currentIndex > 0) currentIndex - 1 else accounts.lastIndex
+                                onAccountChanged(prev)
+                            } else if (offsetX < -150f) {
+                                // Swipe Left -> Next Account
+                                val next = if (currentIndex < accounts.lastIndex) currentIndex + 1 else 0
+                                onAccountChanged(next)
+                            }
+                            offsetX = 0f
+                        },
+                        onDrag = { change, dragAmount ->
+                            change.consume()
+                            offsetX += dragAmount.x
+                        }
                     )
                 }
+                .testTag("balance_card_container"),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            shape = RoundedCornerShape(24.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(finalGradient)
+                    .padding(24.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // Top Row: Account Name & Type Indicator
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = currentAccount.name,
+                                color = Color.White.copy(alpha = 0.8f),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = currentAccount.type,
+                                color = Color.White.copy(alpha = 0.6f),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.White.copy(alpha = 0.15f))
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = "VaultFlow Safe",
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    // Balance Number (Animated)
+                    Text(
+                        text = currencyFormatter.format(animatedBalance.value),
+                        color = Color.White,
+                        style = MaterialTheme.typography.displayLarge.copy(fontSize = 36.sp),
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.testTag("balance_display_text")
+                    )
+
+                    // Bottom Row: Income, Expense, Savings Breakdown
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "INFLOW",
+                                color = Color.White.copy(alpha = 0.6f),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                            Text(
+                                text = currencyFormatter.format(state.monthlyIncome),
+                                color = Color(0xFF34D399),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Column {
+                            Text(
+                                text = "OUTFLOW",
+                                color = Color.White.copy(alpha = 0.6f),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                            Text(
+                                text = currencyFormatter.format(state.monthlyExpense),
+                                color = Color(0xFFF87171),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Column {
+                            Text(
+                                text = "SAVED",
+                                color = Color.White.copy(alpha = 0.6f),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                            Text(
+                                text = currencyFormatter.format(state.savings),
+                                color = Color(0xFF60A5FA),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Carousel Indicators at the bottom center (slightly below)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.padding(bottom = 4.dp)
+        ) {
+            accounts.forEachIndexed { idx, _ ->
+                val isSelected = idx == currentIndex
+                Box(
+                    modifier = Modifier
+                        .size(width = if (isSelected) 14.dp else 6.dp, height = 6.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        )
+                )
             }
         }
     }
